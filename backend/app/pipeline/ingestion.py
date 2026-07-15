@@ -5,6 +5,8 @@ from app.pipeline.parser import DocumentParser
 from app.pipeline.chunker import HierarchicalChunker
 from app.pipeline.embedder import EmbeddingService
 from app.services.bm25_service import BM25Service
+from app.services.entity_extraction_service import EntityExtractionService   
+from app.services.knowledge_graph_service import KnowledgeGraphService
 
 UPLOAD_DIR = "./data/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -16,6 +18,8 @@ class IngestionPipeline:
         self.chunker = HierarchicalChunker()
         self.embedder = EmbeddingService()
         self.bm25 = BM25Service()
+        self.entity_extractor = EntityExtractionService()   
+        self.kg = KnowledgeGraphService() 
 
     def process(self, file_path: str, doc_id: str) -> dict:
         logger.info(f"Starting ingestion: {doc_id}")
@@ -43,6 +47,13 @@ class IngestionPipeline:
             # Stage 4: Add to BM25 index
             logger.info("Stage 4/4: Updating BM25 keyword index...")
             self.bm25.add_chunks(chunks)
+
+             # Stage 5: Extract entities into knowledge graph          
+            logger.info("Stage 5/5: Extracting entities into knowledge graph...")  
+            for chunk in chunks[:30]:                                  
+                extraction = self.entity_extractor.extract(chunk.text, chunk.chunk_id) 
+                if extraction["entities"] or extraction["relationships"]:  
+                    self.kg.add_extraction(extraction)
 
             result = {
                 "doc_id": doc_id,

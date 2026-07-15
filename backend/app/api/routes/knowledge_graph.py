@@ -1,18 +1,27 @@
 from fastapi import APIRouter
+from pydantic import BaseModel
+from app.services.knowledge_graph_service import KnowledgeGraphService
 
 router = APIRouter()
+kg = KnowledgeGraphService()
 
-@router.get("/")
-async def get_graph():
+class EntityQuery(BaseModel):
+    entity_name: str
+    hops: int = 1
+
+@router.get("/stats")
+async def graph_stats():
+    return kg.get_stats()
+
+@router.post("/neighbors")
+async def graph_neighbors(request: EntityQuery):
+    return kg.get_neighbors(request.entity_name, hops=request.hops)
+
+@router.get("/entities")
+async def list_entities():
     return {
-        "nodes": [],
-        "edges": [],
-        "stats": {
-            "node_count": 0,
-            "edge_count": 0
-        }
+        "entities": [
+            {"name": n, "type": kg.graph.nodes[n].get("type", "UNKNOWN")}
+            for n in kg.graph.nodes
+        ][:100]
     }
-
-@router.get("/search")
-async def search_graph(q: str = ""):
-    return {"nodes": [], "query": q}
