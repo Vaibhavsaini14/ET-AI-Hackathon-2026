@@ -1,10 +1,10 @@
 import os
 import shutil
-import uuid
 from loguru import logger
 from app.pipeline.parser import DocumentParser
 from app.pipeline.chunker import HierarchicalChunker
 from app.pipeline.embedder import EmbeddingService
+from app.services.bm25_service import BM25Service
 
 UPLOAD_DIR = "./data/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -15,29 +15,34 @@ class IngestionPipeline:
         self.parser = DocumentParser()
         self.chunker = HierarchicalChunker()
         self.embedder = EmbeddingService()
+        self.bm25 = BM25Service()
 
     def process(self, file_path: str, doc_id: str) -> dict:
-        logger.info(f"Starting ingestion for doc_id: {doc_id}")
+        logger.info(f"Starting ingestion: {doc_id}")
 
         try:
             # Stage 1: Parse
-            logger.info("Stage 1/3: Parsing document...")
+            logger.info("Stage 1/4: Parsing document...")
             parsed = self.parser.parse(file_path, doc_id)
 
             # Stage 2: Chunk
-            logger.info("Stage 2/3: Chunking text...")
+            logger.info("Stage 2/4: Chunking text...")
             chunks = self.chunker.chunk(parsed, doc_id)
 
             if not chunks:
                 return {
                     "doc_id": doc_id,
                     "status": "failed",
-                    "error": "No text could be extracted from document"
+                    "error": "No text could be extracted"
                 }
 
-            # Stage 3: Embed and store
-            logger.info("Stage 3/3: Embedding and storing chunks...")
+            # Stage 3: Embed and store in ChromaDB
+            logger.info("Stage 3/4: Embedding and storing in ChromaDB...")
             self.embedder.embed_and_store(chunks)
+
+            # Stage 4: Add to BM25 index
+            logger.info("Stage 4/4: Updating BM25 keyword index...")
+            self.bm25.add_chunks(chunks)
 
             result = {
                 "doc_id": doc_id,
@@ -48,11 +53,13 @@ class IngestionPipeline:
                 "doc_type": parsed.doc_type
             }
 
-            logger.info(f"Ingestion complete: {parsed.title} — {len(chunks)} chunks")
+            logger.info(
+                f"Ingestion complete: {parsed.title} — {len(chunks)} chunks"
+            )
             return result
 
         except Exception as e:
-            logger.error(f"Ingestion failed for {doc_id}: {str(e)}")
+            logger.error(f"Ingestion failed: {str(e)}")
             return {
                 "doc_id": doc_id,
                 "status": "failed",

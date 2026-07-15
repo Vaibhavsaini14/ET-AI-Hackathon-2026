@@ -1,56 +1,73 @@
+import time
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.pipeline.ingestion import IngestionPipeline
+from loguru import logger
+from app.services.llm_service import RAGService
 
 router = APIRouter()
-pipeline = IngestionPipeline()
+rag = RAGService()
 
 class QueryRequest(BaseModel):
     query: str
     user_role: str = "engineer"
 
+query_history = []
+
 @router.post("/query")
 async def query(request: QueryRequest):
-    results = pipeline.search(request.query, top_k=5)
+    logger.info(f"Query received: {request.query[:80]}")
 
-    if not results:
-        return {
-            "answer": "No documents indexed yet. Please upload a document first.",
-            "sources": [],
-            "confidence": "LOW",
-            "agent_used": "Basic Search",
-            "intent": "expert_query",
-            "processing_time_ms": 0
-        }
+    result = rag.answer(request.query, request.user_role)
 
-    top_result = results[0]
-    sources = [
-        {
-            "index": i + 1,
-            "title": r["metadata"].get("title", "Unknown"),
-            "page": r["metadata"].get("page_number", 1),
-            "doc_id": r["metadata"].get("doc_id", ""),
-            "doc_type": r["metadata"].get("doc_type", "unknown"),
-            "snippet": r["text"][:200],
-            "score": r["score"]
-        }
-        for i, r in enumerate(results)
-    ]
-
-    answer = f"Found {len(results)} relevant sections.\n\n"
-    answer += f"Most relevant (score: {top_result['score']}):\n"
-    answer += top_result["text"][:500]
-    answer += "\n\n[Full RAG with Groq LLM coming Day 3]"
+    log_entry = {
+        "query": request.query,
+        "agent_used": "Expert Query Agent",
+        "intent": "expert_query",
+        "confidence": result["confidence"],
+        "processing_time_ms": result["processing_time_ms"],
+        "source_count": len(result["sources"])
+    }
+    query_history.append(log_entry)
 
     return {
-        "answer": answer,
-        "sources": sources,
-        "confidence": "MEDIUM",
-        "agent_used": "Basic Search (Day 2)",
+        "answer": result["answer"],
+        "sources": result["sources"],
+        "confidence": result["confidence"],
+        "agent_used": "Expert Query Agent",
         "intent": "expert_query",
-        "processing_time_ms": 100
+        "processing_time_ms": result["processing_time_ms"],
+        "cached": False
     }
 
 @router.get("/history")
 async def get_history():
-    return {"history": []}
+    return {
+        "history": query_history[-20:],
+        "total": len(query_history)
+    }
+
+@router.get("/stats")
+async def get_stats():
+    if not query_history:
+        return {
+            "total_queries": 0,
+            "avg_processing_time_ms": 0,
+            "confidence_breakdown": {
+                "HIGH": 0, "MEDIUM": 0, "LOW": 0
+            }
+        }
+
+    total = len(query_history)
+    avg_time = sum(q["processing_time_ms"] for q in query_history) // total
+    confidence_breakdown = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+
+    for q in query_history:
+        c = q.get("confidence", "MEDIUM")
+        if c in confidence_breakdown:
+            confidence_breakdown[c] += 1
+
+    return {
+        "total_queries": total,
+        "avg_processing_time_ms": avg_time,
+        "confidence_breakdown": confidence_breakdown
+    }
