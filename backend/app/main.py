@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.models.database import init_db
 from app.api.routes import health, documents, chat, knowledge_graph, compliance
+from app.api.routes import analytics
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ app.include_router(documents.router, prefix="/api/documents", tags=["Documents"]
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(knowledge_graph.router, prefix="/api/graph", tags=["Knowledge Graph"])
 app.include_router(compliance.router, prefix="/api/compliance", tags=["Compliance"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 
 @app.on_event("startup")
 async def startup():

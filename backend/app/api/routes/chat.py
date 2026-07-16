@@ -36,7 +36,7 @@ async def query(request: QueryRequest):
         "agent_used": result["agent_used"],
         "intent": result["intent"],
         "processing_time_ms": result["processing_time_ms"],
-        "cached": False
+        "cached": result["cached"]
     }
 
 @router.get("/history")

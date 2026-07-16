@@ -7,6 +7,7 @@ from app.pipeline.embedder import EmbeddingService
 from app.services.bm25_service import BM25Service
 from app.services.entity_extraction_service import EntityExtractionService   
 from app.services.knowledge_graph_service import KnowledgeGraphService
+from app.services.cache_service import CacheService
 
 UPLOAD_DIR = "./data/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -20,6 +21,7 @@ class IngestionPipeline:
         self.bm25 = BM25Service()
         self.entity_extractor = EntityExtractionService()   
         self.kg = KnowledgeGraphService() 
+        self.cache = CacheService()
 
     def process(self, file_path: str, doc_id: str) -> dict:
         logger.info(f"Starting ingestion: {doc_id}")
@@ -54,6 +56,10 @@ class IngestionPipeline:
                 extraction = self.entity_extractor.extract(chunk.text, chunk.chunk_id) 
                 if extraction["entities"] or extraction["relationships"]:  
                     self.kg.add_extraction(extraction)
+            
+            self.cache.exact_cache.clear()
+            self.cache.semantic_entries.clear()
+            logger.info("Cache cleared after new document ingestion")
 
             result = {
                 "doc_id": doc_id,
