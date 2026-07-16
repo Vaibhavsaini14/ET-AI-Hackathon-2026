@@ -5,8 +5,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18-blue)](https://react.dev)
-[![Groq](https://img.shields.io/badge/LLM-Groq%20Llama%203.1-orange)](https://groq.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![Groq](https://img.shields.io/badge/LLM-Groq%20Llama%203.3-orange)](https://groq.com)
 
 ---
 
@@ -34,34 +33,6 @@ NEXUS is an AI-powered Industrial Knowledge Intelligence platform that ingests h
 ### Expert Knowledge Copilot
 Ask any question about your plant in plain English. NEXUS retrieves the most relevant sections from across all your documents using hybrid search
 
-
-┌─────────────────────────────────────────────────────────┐
-│                    React Frontend                        │
-│         Chat │ Documents │ Graph │ Compliance            │
-└──────────────────────┬──────────────────────────────────┘
-│ REST API
-┌──────────────────────▼──────────────────────────────────┐
-│                   FastAPI Backend                        │
-│                                                          │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │            LangGraph Agent System                │    │
-│  │  Router → Expert Query / RCA / Compliance Agent  │    │
-│  └──────────────────────┬──────────────────────────┘    │
-│                         │                                │
-│  ┌──────────┐  ┌────────▼──────┐  ┌──────────────────┐ │
-│  │ ChromaDB │  │ Hybrid Search │  │  Knowledge Graph  │ │
-│  │ Vectors  │  │ BM25+Semantic │  │  NetworkX+D3.js   │ │
-│  └──────────┘  └───────────────┘  └──────────────────┘ │
-│                         │                                │
-│  ┌──────────────────────▼──────────────────────────┐    │
-│  │         Groq LLaMA 3.3 70B (Free LLM)           │    │
-│  └─────────────────────────────────────────────────┘    │
-│                                                          │
-│  ┌─────────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │  PostgreSQL │  │  Redis   │  │  Document Pipeline │  │
-│  │  Metadata   │  │  Cache   │  │  Parse→Chunk→Embed │  │
-│  └─────────────┘  └──────────┘  └───────────────────┘  │
-
 ---
 
 ## Tech Stack
@@ -84,27 +55,3 @@ Ask any question about your plant in plain English. NEXUS retrieves the most rel
 
 ---
 
-## Project Structure
-nexus-industrial-ai/
-├── ET-AI-Hackathon-2026/
-│   ├── backend/
-│   │   ├── app/
-│   │   │   ├── api/routes/       # FastAPI route handlers
-│   │   │   ├── agents/           # LangGraph agent definitions
-│   │   │   ├── pipeline/         # Document ingestion pipeline
-│   │   │   ├── services/         # RAG, retrieval, LLM services
-│   │   │   ├── models/           # Database models and schemas
-│   │   │   ├── utils/            # Entity extractor, citations
-│   │   │   ├── config.py         # Settings management
-│   │   │   └── main.py           # FastAPI application entry
-│   │   ├── data/                 # Document storage
-│   │   ├── chroma_data/          # Vector database persistence
-│   │   └── requirements.txt
-│   └── frontend/
-│       └── src/
-│           ├── components/       # React components
-│           ├── pages/            # Route pages
-│           ├── api/              # API client
-│           └── types/            # TypeScript types
-├── docker-compose.yml
-└── README.md
