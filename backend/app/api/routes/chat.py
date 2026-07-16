@@ -2,10 +2,10 @@ import time
 from fastapi import APIRouter
 from pydantic import BaseModel
 from loguru import logger
-from app.services.llm_service import RAGService
+from app.agents.orchestrator import Orchestrator
 
 router = APIRouter()
-rag = RAGService()
+orchestrator = Orchestrator()
 
 class QueryRequest(BaseModel):
     query: str
@@ -17,12 +17,12 @@ query_history = []
 async def query(request: QueryRequest):
     logger.info(f"Query received: {request.query[:80]}")
 
-    result = rag.answer(request.query, request.user_role)
+    result = orchestrator.route(request.query, request.user_role)
 
     log_entry = {
         "query": request.query,
-        "agent_used": "Expert Query Agent",
-        "intent": "expert_query",
+        "agent_used": result["agent_used"],
+        "intent": result["intent"],
         "confidence": result["confidence"],
         "processing_time_ms": result["processing_time_ms"],
         "source_count": len(result["sources"])
@@ -33,8 +33,8 @@ async def query(request: QueryRequest):
         "answer": result["answer"],
         "sources": result["sources"],
         "confidence": result["confidence"],
-        "agent_used": "Expert Query Agent",
-        "intent": "expert_query",
+        "agent_used": result["agent_used"],
+        "intent": result["intent"],
         "processing_time_ms": result["processing_time_ms"],
         "cached": False
     }
