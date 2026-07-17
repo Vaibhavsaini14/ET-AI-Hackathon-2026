@@ -4,6 +4,7 @@ from app.services.llm_service import RAGService
 from app.services.graph_rag_service import GraphRAGService
 from app.services.cache_service import CacheService
 
+
 class Orchestrator:
     def __init__(self):
         self.classifier = IntentClassifier()
@@ -12,7 +13,6 @@ class Orchestrator:
         self.cache = CacheService()
 
     def route(self, query: str, user_role: str = "engineer") -> dict:
-        # Check cache first
         cached_result = self.cache.get(query, user_role)
         if cached_result:
             cached_result["cached"] = True
@@ -21,15 +21,18 @@ class Orchestrator:
         classification = self.classifier.classify(query)
         intent = classification.get("intent", "factual_lookup")
 
-        logger.info(f"Routed query as '{intent}': {query[:60]}")
+        logger.info(f"Detected intent: {intent}")
+        logger.info(f"Query: {query}")
 
-        if intent in ("relationship_query", "comparison"):
+        if intent == "relationship_query":
             result = self.graph_rag.answer_with_graph(query, user_role)
             agent_used = "Graph RAG Agent"
+
         elif intent == "compliance_check":
             result = self.rag.answer(query, user_role)
             result["compliance_flag"] = True
             agent_used = "Compliance Agent"
+
         else:
             result = self.rag.answer(query, user_role)
             agent_used = "Hybrid RAG Agent"
@@ -39,4 +42,5 @@ class Orchestrator:
         result["cached"] = False
 
         self.cache.set(query, user_role, result)
+
         return result
