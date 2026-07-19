@@ -7,6 +7,7 @@ venv/
 *.pkl
 nexus_kg.json
 bm25_index.pkl
+knowledge_graph.pkl
 .env
 
 # ChromaDB
@@ -30,5 +31,4 @@ backend/data/documents/*
 !backend/data/documents/.gitkeep
 backend/data/regulations/*
 !backend/data/regulations/.gitkeep
-
 .env

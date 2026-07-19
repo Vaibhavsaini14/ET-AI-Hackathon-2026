@@ -1,3 +1,4 @@
+import os
 import chromadb
 from sentence_transformers import SentenceTransformer
 from loguru import logger
@@ -20,13 +21,29 @@ class EmbeddingService:
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
         logger.info("Embedding model loaded successfully")
 
+        # ==========================
+        # DEBUG INFO
+        # ==========================
+        print("\n" + "=" * 80)
+        print("CURRENT WORKING DIRECTORY:")
+        print(os.getcwd())
+
+        print("\nCHROMA PERSIST DIRECTORY (CONFIG):")
+        print(settings.chroma_persist_dir)
+
+        print("\nABSOLUTE CHROMA PATH:")
+        print(os.path.abspath(settings.chroma_persist_dir))
+        print("=" * 80 + "\n")
+
         self.client = chromadb.PersistentClient(
             path=settings.chroma_persist_dir
         )
+
         self.collection = self.client.get_or_create_collection(
             name="nexus_documents",
             metadata={"hnsw:space": "cosine"}
         )
+
         logger.info(f"ChromaDB ready — {self.collection.count()} chunks stored")
         self._initialized = True
 
@@ -53,15 +70,20 @@ class EmbeddingService:
             documents=texts,
             metadatas=metadatas
         )
+
         logger.info(f"Stored {len(chunks)} chunks in ChromaDB")
 
     def semantic_search(self, query: str, top_k: int = 5) -> list:
         total = self.collection.count()
+
         if total == 0:
             logger.warning("ChromaDB is empty — no documents indexed yet")
             return []
 
-        query_embedding = self.model.encode([query], convert_to_numpy=True)
+        query_embedding = self.model.encode(
+            [query],
+            convert_to_numpy=True
+        )
 
         results = self.collection.query(
             query_embeddings=query_embedding.tolist(),
@@ -69,7 +91,20 @@ class EmbeddingService:
             include=["documents", "metadatas", "distances"]
         )
 
+        # ==========================
+        # DEBUG INFO
+        # ==========================
+        print("\n" + "=" * 80)
+        print("CHROMA RESULTS")
+        print("=" * 80)
+
+        for meta in results["metadatas"][0]:
+            print(meta)
+
+        print("=" * 80 + "\n")
+
         output = []
+
         for doc, meta, dist in zip(
             results["documents"][0],
             results["metadatas"][0],
@@ -87,6 +122,7 @@ class EmbeddingService:
         results = self.collection.get(
             where={"doc_id": doc_id}
         )
+
         if results["ids"]:
             self.collection.delete(ids=results["ids"])
             logger.info(f"Deleted {len(results['ids'])} chunks for doc {doc_id}")
