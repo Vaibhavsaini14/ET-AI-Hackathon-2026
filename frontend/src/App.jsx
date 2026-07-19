@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Home, Search, Briefcase, BookOpen, Folder, HelpCircle, Settings } from "lucide-react";
 import { uploadDocument, sendQuery, getAnalytics } from "./api";
 import "./App.css";
 
@@ -10,13 +11,14 @@ function App() {
   const [file, setFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
   const [analytics, setAnalytics] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const handleUpload = async () => {
     if (!file) return;
     setUploadStatus("Uploading...");
     try {
       const data = await uploadDocument(file);
-      setUploadStatus(`Uploaded: ${data.title || data.doc_id} — status: ${data.status}`);
+      setUploadStatus(`Uploaded: ${data.filename || data.doc_id} — ${data.status}`);
     } catch (err) {
       setUploadStatus("Upload failed: " + err.message);
     }
@@ -36,70 +38,126 @@ function App() {
   };
 
   const handleAnalytics = async () => {
+    if (showAnalytics) {
+      setShowAnalytics(false);
+      return;
+    }
     const data = await getAnalytics();
     setAnalytics(data);
+    setShowAnalytics(true);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleQuery();
   };
 
   return (
-    <div className="app">
-      <h1>NEXUS — Industrial Knowledge Intelligence</h1>
+    <div className="app-layout">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="sidebar-logo"></div>
+        <Home className="sidebar-icon active" size={22} />
+        <Search className="sidebar-icon" size={22} />
+        <Briefcase className="sidebar-icon" size={22} />
+        <BookOpen className="sidebar-icon" size={22} />
+        <Folder className="sidebar-icon" size={22} />
+        <HelpCircle className="sidebar-icon" size={22} />
+        <Settings className="sidebar-icon" size={22} />
+      </div>
 
-      <section className="panel">
-        <h2>1. Upload Document</h2>
-        <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-        <button onClick={handleUpload}>Upload</button>
-        <p>{uploadStatus}</p>
-      </section>
-
-      <section className="panel">
-        <h2>2. Ask a Question</h2>
-        <select value={userRole} onChange={(e) => setUserRole(e.target.value)}>
-          <option value="technician">Technician</option>
-          <option value="engineer">Engineer</option>
-          <option value="manager">Manager</option>
-        </select>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask about your documents..."
-          style={{ width: "60%", marginLeft: "8px" }}
-        />
-        <button onClick={handleQuery} disabled={loading}>
-          {loading ? "Thinking..." : "Ask"}
-        </button>
-
-        {result && (
-          <div className="result">
-            <p><strong>Answer:</strong> {result.answer}</p>
-            <p>
-              <strong>Agent:</strong> {result.agent_used} |{" "}
-              <strong>Intent:</strong> {result.intent} |{" "}
-              <strong>Confidence:</strong> {result.confidence} |{" "}
-              <strong>Cached:</strong> {String(result.cached)} |{" "}
-              <strong>Time:</strong> {result.processing_time_ms}ms
-            </p>
-            <h4>Sources:</h4>
-            <ul>
-              {result.sources?.map((s, i) => (
-                <li key={i}>
-                  [{s.index}] {s.title} — Page {s.page}
-                </li>
-              ))}
-            </ul>
+      {/* Main area */}
+      <div className="main-area">
+        <div className="topbar">
+          <h1>NEXUS</h1>
+          <div className="topbar-actions">
+            <button className="new-chat-btn" onClick={() => { setResult(null); setQuery(""); }}>
+              + New Chat
+            </button>
           </div>
-        )}
-      </section>
+        </div>
 
-      <section className="panel">
-        <h2>3. Analytics</h2>
-        <button onClick={handleAnalytics}>Refresh Dashboard</button>
-        {analytics && (
-          <pre style={{ textAlign: "left", background: "#111", color: "#0f0", padding: "10px" }}>
-            {JSON.stringify(analytics, null, 2)}
-          </pre>
-        )}
-      </section>
+        <div className="center-content">
+          <div className="orb"></div>
+
+          <div className="headline">
+            <h2>Got something on your mind?</h2>
+            <h2 className="highlight">Let's chat with your documents.</h2>
+          </div>
+
+          <div className="chat-card">
+            <div className="chat-card-header">
+              <span>Upload a document to get started</span>
+              <select
+                className="role-select"
+                value={userRole}
+                onChange={(e) => setUserRole(e.target.value)}
+              >
+                <option value="technician">Technician</option>
+                <option value="engineer">Engineer</option>
+                <option value="manager">Manager</option>
+              </select>
+            </div>
+
+            <div className="input-row">
+              <input
+                type="text"
+                className="query-input"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about your documents..."
+              />
+              <button className="ask-btn" onClick={handleQuery} disabled={loading}>
+                {loading ? "Thinking..." : "Ask"}
+              </button>
+            </div>
+
+            <div className="upload-row">
+              <input
+                type="file"
+                onChange={(e) => setFile(e.target.files[0])}
+                style={{ fontSize: "12px" }}
+              />
+              <button className="ask-btn" onClick={handleUpload}>
+                Upload
+              </button>
+            </div>
+            {uploadStatus && <p className="upload-status">{uploadStatus}</p>}
+          </div>
+
+          {result && (
+            <div className="result-panel">
+              <p className="result-answer">{result.answer}</p>
+              <div className="result-meta">
+                <span className="badge">{result.agent_used}</span>
+                <span className="badge">{result.intent}</span>
+                <span className="badge">{result.confidence}</span>
+                <span className={`badge ${result.cached ? "cached" : ""}`}>
+                  {result.cached ? "Cached" : "Fresh"}
+                </span>
+                <span className="badge">{result.processing_time_ms}ms</span>
+              </div>
+              {result.sources && result.sources.length > 0 && (
+                <ul className="sources-list">
+                  {result.sources.map((s, i) => (
+                    <li key={i}>
+                      [{s.index}] {s.title} — Page {s.page}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="analytics-toggle" onClick={handleAnalytics}>
+            {showAnalytics ? "Hide Analytics" : "Show Analytics Dashboard"}
+          </div>
+
+          {showAnalytics && analytics && (
+            <pre className="analytics-box">{JSON.stringify(analytics, null, 2)}</pre>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
