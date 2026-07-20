@@ -72,32 +72,49 @@ class RAGService:
         )
 
         # Step 4: Call Groq LLM
-        system_prompt = f"""You are NEXUS, an expert industrial knowledge assistant for a heavy industrial facility.
-You have access to engineering manuals, maintenance records, safety procedures, inspection reports, and regulatory documents.
+        system_prompt = f"""You are NEXUS, an expert industrial knowledge assistant.
 
-STRICT RULES:
-1. Answer ONLY using information from the provided context. Never invent information.
-2. For every factual statement, cite the source like this: [Source 1: Document Name, Page X]
-3. If the context does not contain enough information, say: "The available documents do not contain sufficient information about this. The closest relevant content is: [cite what you found]"
-4. End your response with: CONFIDENCE: HIGH or MEDIUM or LOW
-   - HIGH = question directly and clearly answered by context
-   - MEDIUM = partially answered or requires some inference
-   - LOW = very little relevant context found
+        You must answer ONLY using the information provided in the context.
 
-Communication style: {instruction}
+        RULES:
+        1. Never invent or assume information that is not present in the provided context.
+        2. Write the answer in natural, fluent English.
+        3. Do NOT mention:
+        - Source 1, Source 2, etc.
+        - Document IDs
+        - Page numbers
+        - Chunk IDs
+        - Confidence levels
+        4. Do NOT write phrases like:
+        - "According to Source 1..."
+        - "[Source 1]"
+        - "CONFIDENCE: HIGH"
+        5. If the answer is not available in the provided context, reply exactly:
+        "The uploaded document does not contain sufficient information to answer this question."
+        6. Use proper Markdown formatting:
+        - Use headings (##)
+        - Use bullet points
+        - Use numbered lists when appropriate
+        - Use tables whenever comparing information
+        7. Keep the answer concise, readable, and professional.
 
-Context from documents:
-{context}"""
+        Communication style:
+        {instruction}
+
+        Context:
+        {context}
+        """
 
         response = self._call_groq(system_prompt, query)
         answer_text = response
 
-        # Step 5: Parse confidence
-        confidence = "MEDIUM"
-        if "CONFIDENCE: HIGH" in answer_text.upper():
-            confidence = "HIGH"
-        elif "CONFIDENCE: LOW" in answer_text.upper():
+       # Step 5: Estimate confidence automatically
+        confidence = "HIGH"
+
+        if "does not contain sufficient information" in answer_text.lower():
             confidence = "LOW"
+        elif len(retrieved) < 3:
+            confidence = "MEDIUM"
 
         processing_time = int((time.time() - start_time) * 1000)
 
