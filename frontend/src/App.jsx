@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  Home, Settings, Plus, Send, X, Paperclip, Image, FileText,
+  Settings, Plus, Send, X, Paperclip, Image, FileText,
   Copy, RotateCcw, Check
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";

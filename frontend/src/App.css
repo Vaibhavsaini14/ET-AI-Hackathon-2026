@@ -217,6 +217,7 @@ body {
 
 .headline .highlight {
   background: linear-gradient(90deg, #14b8a6, #0f766e);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
