@@ -10,6 +10,7 @@ orchestrator = Orchestrator()
 class QueryRequest(BaseModel):
     query: str
     user_role: str = "engineer"
+    doc_ids: list[str] = []
 
 query_history = []
 
@@ -17,7 +18,7 @@ query_history = []
 async def query(request: QueryRequest):
     logger.info(f"Query received: {request.query[:80]}")
 
-    result = orchestrator.route(request.query, request.user_role)
+    result = orchestrator.route(request.query, request.user_role, request.doc_ids)
 
     log_entry = {
         "query": request.query,
