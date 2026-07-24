@@ -73,7 +73,7 @@ class EmbeddingService:
 
         logger.info(f"Stored {len(chunks)} chunks in ChromaDB")
 
-    def semantic_search(self, query: str, top_k: int = 5) -> list:
+    def semantic_search(self, query: str, top_k: int = 5, doc_ids: list = None) -> list:
         total = self.collection.count()
 
         if total == 0:
@@ -84,10 +84,12 @@ class EmbeddingService:
             [query],
             convert_to_numpy=True
         )
+        where_filter = {"doc_id": {"$in": doc_ids}} if doc_ids else None
 
         results = self.collection.query(
             query_embeddings=query_embedding.tolist(),
             n_results=min(top_k, total),
+            where=where_filter,
             include=["documents", "metadatas", "distances"]
         )
 
