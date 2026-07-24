@@ -12,7 +12,8 @@ class Orchestrator:
         self.graph_rag = GraphRAGService()
         self.cache = CacheService()
 
-    def route(self, query: str, user_role: str = "engineer") -> dict:
+    def route(self, query: str, user_role: str = "engineer", doc_ids: list = None) -> dict:
+        doc_ids = doc_ids or []
         cached_result = self.cache.get(query, user_role)
         if cached_result:
             cached_result["cached"] = True
@@ -29,12 +30,12 @@ class Orchestrator:
             agent_used = "Graph RAG Agent"
 
         elif intent == "compliance_check":
-            result = self.rag.answer(query, user_role)
+            result = self.rag.answer(query, user_role, doc_ids)
             result["compliance_flag"] = True
             agent_used = "Compliance Agent"
 
         else:
-            result = self.rag.answer(query, user_role)
+            result = self.rag.answer(query, user_role, doc_ids)
             agent_used = "Hybrid RAG Agent"
 
         result["intent"] = intent
