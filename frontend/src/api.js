@@ -9,10 +9,11 @@ export const uploadDocument = async (file) => {
   return res.data;
 };
 
-export const sendQuery = async (query, userRole) => {
+export const sendQuery = async (query, userRole, docIds = []) => {
   const res = await axios.post(`${API_BASE}/chat/query`, {
     query,
     user_role: userRole,
+    doc_ids: docIds,
   });
   return res.data;
 };
