@@ -19,14 +19,15 @@ class HybridRetrievalService:
         self._initialized = True
         logger.info("Hybrid retrieval service ready")
 
-    def retrieve(self, query: str, top_k: int = 5) -> list:
-        # Step 1: Semantic search
-        semantic_results = self.semantic.semantic_search(query, top_k=20)
-
-        # Step 2: BM25 keyword search
+    def retrieve(self, query: str, top_k: int = 5, doc_ids: list = None) -> list:
+        semantic_results = self.semantic.semantic_search(query, top_k=20, doc_ids=doc_ids)
         bm25_results = self.bm25.search(query, top_k=20)
+        if doc_ids:
+            bm25_results = [
+                r for r in bm25_results if r["metadata"].get("doc_id") in doc_ids
+            ]
 
-        # Step 3: Combine with Reciprocal Rank Fusion
+
         fused = self._rrf_fusion(semantic_results, bm25_results)
 
         logger.info(
