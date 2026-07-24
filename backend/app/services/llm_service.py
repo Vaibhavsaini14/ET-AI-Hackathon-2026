@@ -23,8 +23,9 @@ class RAGService:
         self._initialized = True
         logger.info("RAG service ready with Groq LLM")
 
-    def answer(self, query: str, user_role: str = "engineer") -> dict:
+    def answer(self, query: str, user_role: str = "engineer", doc_ids: list = None) -> dict:
         start_time = time.time()
+        retrieved = self.retrieval.retrieve(query, top_k=5, doc_ids=doc_ids)
 
         # Step 1: Retrieve relevant chunks
         retrieved = self.retrieval.retrieve(query, top_k=5)
