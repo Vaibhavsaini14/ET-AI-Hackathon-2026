@@ -27,6 +27,7 @@ function App() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [copiedIdx, setCopiedIdx] = useState(null);
+  const [docIds, setDocIds] = useState([]);
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
   const attachMenuRef = useRef(null);
@@ -60,31 +61,32 @@ function App() {
     setShowAttachMenu(false);
   };
 
-  const handleUpload = async () => {
-    if (!file) return;
-    setUploading(true);
-    setMessages((prev) => [...prev, { role: "system", content: `Uploading "${file.name}"...` }]);
-    try {
-      const data = await uploadDocument(file);
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        { role: "system", content: `Indexed "${data.title || file.name}" — ${data.chunk_count || 0} chunks ready.` },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        { role: "system", content: "Upload failed: " + (err.response?.data?.detail || err.message) },
-      ]);
-    }
-    setUploading(false);
-    setFile(null);
-  };
+ const handleUpload = async () => {
+  if (!file) return;
+  setUploading(true);
+  setMessages((prev) => [...prev, { role: "system", content: `Uploading "${file.name}"...` }]);
+  try {
+    const data = await uploadDocument(file);
+    setDocIds((prev) => [...prev, data.doc_id]);
+    setMessages((prev) => [
+      ...prev.slice(0, -1),
+      { role: "system", content: `Indexed "${data.title || file.name}" — ${data.chunk_count || 0} chunks ready.` },
+    ]);
+  } catch (err) {
+    setMessages((prev) => [
+      ...prev.slice(0, -1),
+      { role: "system", content: "Upload failed: " + (err.response?.data?.detail || err.message) },
+    ]);
+  }
+  setUploading(false);
+  setFile(null);
+};
 
   const runQuery = async (text) => {
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setLoading(true);
     try {
-      const data = await sendQuery(text, userRole);
+      const data = await sendQuery(text, userRole , docIds);
       setMessages((prev) => [
         ...prev,
         {
@@ -138,11 +140,13 @@ function App() {
     setMessages([]);
     setInput("");
     setFile(null);
+    setDocIds([]);
   };
 
   const handleLoadHistory = (entry) => {
     if (messages.length > 0) handleNewChat();
     setMessages(entry.messages);
+    setDocIds(entry.docIds || []);
     setChatHistory((prev) => prev.filter((c) => c.id !== entry.id));
   };
 
